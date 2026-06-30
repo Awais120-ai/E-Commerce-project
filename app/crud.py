@@ -2,14 +2,14 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
-
+from app.utils.password import hash_password
 
 def create_user(db: Session, user: UserCreate):
 
     db_user = User(
         full_name=user.full_name,
         email=user.email,
-        password=user.password
+        password=hash_password(user.password)
     )
 
     db.add(db_user)
@@ -41,7 +41,7 @@ def update_user(db: Session, user_id: int, user: UserUpdate):
         db_user.email = user.email
 
     if user.password is not None:
-        db_user.password = user.password
+        db_user.password = hash_password(user.password)
 
     db.commit()
     db.refresh(db_user)
@@ -60,3 +60,7 @@ def delete_user(db: Session, user_id: int):
     db.commit()
 
     return True
+
+
+def get_user_by_email(db, email):
+    return db.query(User).filter(User.email == email).first()
