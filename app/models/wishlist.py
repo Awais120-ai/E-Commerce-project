@@ -4,8 +4,8 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 
-class Cart(Base):
-    __tablename__ = "cart"
+class Wishlist(Base):
+    __tablename__ = "wishlists"
 
     id = Column(Integer, primary_key=True, index=True)
 
@@ -19,10 +19,6 @@ class Cart(Base):
         ForeignKey("products.id")
     )
 
-    quantity = Column(
-        Integer,
-        default=1
-    )
-
     user = relationship("User")
+
     product = relationship("Product")

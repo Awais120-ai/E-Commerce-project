@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class ProductBase(BaseModel):
@@ -6,6 +7,7 @@ class ProductBase(BaseModel):
     description: str
     price: float
     stock: int
+    category_id: Optional[int] = None
 
 
 class ProductCreate(ProductBase):
@@ -13,14 +15,17 @@ class ProductCreate(ProductBase):
 
 
 class ProductUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    price: float | None = None
-    stock: int | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    stock: Optional[int] = None
+    category_id: Optional[int] = None
+    image: Optional[str] = None
 
 
 class ProductResponse(ProductBase):
     id: int
+    image: Optional[str] = None
 
     class Config:
         from_attributes = True
