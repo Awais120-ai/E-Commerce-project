@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 
 import app.crud as crud
+# User import removed to avoid circular import
+from app.dependencies import get_current_user
 
 from app.schemas.payment import (
     PaymentCreate,
@@ -27,21 +29,16 @@ def get_db():
 @router.post("/", response_model=PaymentResponse)
 def make_payment(
     payment: PaymentCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-
-    order = crud.get_order(
-        db,
-        payment.order_id
-    )
-
-    if not order:
-
+    # Verify the order belongs to the user
+    order = crud.get_order(db, payment.order_id)
+    if not order or order.user_id != current_user.id:
         raise HTTPException(
             status_code=404,
             detail="Order not found"
         )
-
     return crud.create_payment(
         db,
         order.id,

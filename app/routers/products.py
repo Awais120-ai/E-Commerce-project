@@ -22,7 +22,7 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db)):
         category = crud.get_category(db, product.category_id)
         if not category:
             raise HTTPException(
-                status_code=400,
+                status_code=404,
                 detail="Category not found"
             )
     return crud.create_product(db, product)

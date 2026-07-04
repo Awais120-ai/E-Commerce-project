@@ -15,10 +15,7 @@ class Order(Base):
         ForeignKey("users.id")
     )
 
-    status = Column(
-    String(20),
-    default=PENDING
-)
+    status = Column(String(20), default=PENDING)
 
     total_price = Column(
         Integer,
