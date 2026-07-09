@@ -8,9 +8,10 @@ class Product(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
-
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     category = relationship("Category", back_populates="products")
+    owner = relationship("User", back_populates="products")
 
     name = Column(String(255), nullable=False)
     description = Column(Text)

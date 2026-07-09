@@ -4,6 +4,7 @@ from typing import Optional
 
 class CategoryBase(BaseModel):
     name: str
+    user_id: Optional[int] = None
 
 
 class CategoryCreate(CategoryBase):

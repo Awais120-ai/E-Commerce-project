@@ -16,6 +16,8 @@ from app.models.cart import Cart
 from app.models.wishlist import Wishlist
 from app.schemas.wishlist import WishlistCreate
 from app.models.payment import Payment
+from app.models.address import Address
+from app.schemas.address import AddressCreate, AddressUpdate
 
 
 
@@ -82,13 +84,14 @@ def delete_user(db: Session, user_id: int):
 # PRODUCT CRUD
 # -------------------------------
 
-def create_product(db: Session, product: ProductCreate):
+def create_product(db: Session, product: ProductCreate, user_id: int):
     db_product = Product(
         name=product.name,
         description=product.description,
         price=product.price,
         stock=product.stock,
-        category_id=product.category_id
+        category_id=product.category_id,
+        user_id=user_id,
     )
     db.add(db_product)
     db.commit()
@@ -98,13 +101,14 @@ def create_product(db: Session, product: ProductCreate):
 
 def get_products(
     db: Session,
+    user_id: int,
     search: str = "",
     skip: int = 0,
     limit: int = 10,
     sort: str = "id"
 ):
 
-    query = db.query(Product)
+    query = db.query(Product).filter(Product.user_id == user_id)
 
     if search:
         query = query.filter(
@@ -126,12 +130,12 @@ def get_products(
     return query.offset(skip).limit(limit).all()
 
 
-def get_product(db: Session, product_id: int):
-    return db.query(Product).filter(Product.id == product_id).first()
+def get_product(db: Session, product_id: int, user_id: int):
+    return db.query(Product).filter(Product.id == product_id, Product.user_id == user_id).first()
 
 
-def update_product(db: Session, product_id: int, product: ProductUpdate):
-    db_product = get_product(db, product_id)
+def update_product(db: Session, product_id: int, product: ProductUpdate, user_id: int):
+    db_product = get_product(db, product_id, user_id)
     if not db_product:
         return None
 
@@ -158,8 +162,8 @@ def update_product(db: Session, product_id: int, product: ProductUpdate):
     return db_product
 
 
-def delete_product(db: Session, product_id: int):
-    db_product = get_product(db, product_id)
+def delete_product(db: Session, product_id: int, user_id: int):
+    db_product = get_product(db, product_id, user_id)
     if not db_product:
         return None
     db.delete(db_product)
@@ -171,9 +175,10 @@ def delete_product(db: Session, product_id: int):
 # CATEGORY CRUD
 # ------------------------
 
-def create_category(db: Session, category: CategoryCreate):
+def create_category(db: Session, category: CategoryCreate, user_id: int):
     db_category = Category(
-        name=category.name
+        name=category.name,
+        user_id=user_id,
     )
     db.add(db_category)
     db.commit()
@@ -181,13 +186,14 @@ def create_category(db: Session, category: CategoryCreate):
     return db_category
 
 
-def get_categories(db: Session):
-    return db.query(Category).all()
+def get_categories(db: Session, user_id: int):
+    return db.query(Category).filter(Category.user_id == user_id).all()
 
 
-def get_category(db: Session, category_id: int):
+def get_category(db: Session, category_id: int, user_id: int):
     return db.query(Category).filter(
-        Category.id == category_id
+        Category.id == category_id,
+        Category.user_id == user_id
     ).first()
 
 
@@ -197,8 +203,8 @@ def get_category_by_name(db: Session, name: str):
     ).first()
 
 
-def delete_category(db: Session, category_id: int):
-    category = get_category(db, category_id)
+def delete_category(db: Session, category_id: int, user_id: int):
+    category = get_category(db, category_id, user_id)
     if not category:
         return None
     db.delete(category)
@@ -216,7 +222,7 @@ def add_to_cart(
     user_id: int,
     cart: CartCreate
 ):
-    product = get_product(db, cart.product_id)
+    product = get_product(db, cart.product_id, user_id)
     if not product:
         raise HTTPException(
             status_code=404,
@@ -285,7 +291,7 @@ def create_order(db: Session, user_id: int):
 
     # Perform stock and existence checks first
     for item in cart_items:
-        product = get_product(db, item.product_id)
+        product = get_product(db, item.product_id, user_id)
         if not product:
             raise HTTPException(
                 status_code=404,
@@ -520,3 +526,87 @@ def update_payment_status(
     db.refresh(payment)
 
     return payment
+
+
+
+
+
+    # ------------------------
+# ADDRESS CRUD
+# ------------------------
+
+def create_address(db: Session, address: AddressCreate, user_id: int):
+
+    db_address = Address(
+        full_name=address.full_name,
+        phone=address.phone,
+        country=address.country,
+        city=address.city,
+        postal_code=address.postal_code,
+        address=address.address,
+        user_id=user_id
+    )
+
+    db.add(db_address)
+    db.commit()
+    db.refresh(db_address)
+
+    return db_address
+
+
+def get_addresses(db: Session):
+    return db.query(Address).all()
+
+
+def get_address(db: Session, address_id: int):
+    return db.query(Address).filter(
+        Address.id == address_id
+    ).first()
+
+
+def update_address(
+    db: Session,
+    address_id: int,
+    address: AddressUpdate
+):
+
+    db_address = get_address(db, address_id)
+
+    if not db_address:
+        return None
+
+    if address.full_name is not None:
+        db_address.full_name = address.full_name
+
+    if address.phone is not None:
+        db_address.phone = address.phone
+
+    if address.country is not None:
+        db_address.country = address.country
+
+    if address.city is not None:
+        db_address.city = address.city
+
+    if address.postal_code is not None:
+        db_address.postal_code = address.postal_code
+
+    if address.address is not None:
+        db_address.address = address.address
+
+    db.commit()
+    db.refresh(db_address)
+
+    return db_address
+
+
+def delete_address(db: Session, address_id: int):
+
+    db_address = get_address(db, address_id)
+
+    if not db_address:
+        return None
+
+    db.delete(db_address)
+    db.commit()
+
+    return True

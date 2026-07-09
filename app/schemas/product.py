@@ -8,6 +8,7 @@ class ProductBase(BaseModel):
     price: float
     stock: int
     category_id: Optional[int] = None
+    user_id: Optional[int] = None
 
 
 class ProductCreate(ProductBase):
