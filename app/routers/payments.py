@@ -33,13 +33,8 @@ def make_payment(
     current_user = Depends(get_current_user)
 ):
     # Verify the order belongs to the user
-    order = crud.get_order(
-    db,
-    payment.order_id,
-    current_user.id
-)
-
-    if not order:
+    order = crud.get_order(db, payment.order_id)
+    if not order or order.user_id != current_user.id:
         raise HTTPException(
             status_code=404,
             detail="Order not found"
@@ -54,10 +49,7 @@ def make_payment(
 
 @router.get("/", response_model=list[PaymentResponse])
 def read_payments(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    return crud.get_payments(
-        db,
-        current_user.id
-    )
+
+    return crud.get_payments(db)

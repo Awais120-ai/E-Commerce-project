@@ -1,5 +1,4 @@
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import relationship
 from app.database import Base
 
 
@@ -14,8 +13,4 @@ class User(Base):
     role = Column(
         String(20),
         default="user"
-    )
-    # Relationships for multi‑tenant ownership
-    products = relationship("Product", back_populates="owner")
-    categories = relationship("Category", back_populates="owner")
-    addresses = relationship("Address", back_populates="user")
+    )

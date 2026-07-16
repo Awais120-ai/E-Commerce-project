@@ -7,4 +7,3 @@ from .order import Order
 from .order_item import OrderItem
 from .wishlist import Wishlist
 from .payment import Payment
-from .address import Address

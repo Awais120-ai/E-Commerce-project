@@ -22,4 +22,3 @@ class Wishlist(Base):
     user = relationship("User")
 
     product = relationship("Product")
-    

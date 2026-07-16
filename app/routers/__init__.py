@@ -6,4 +6,3 @@ from . import cart
 from . import orders
 from . import wishlist
 from . import payments
-from . import address

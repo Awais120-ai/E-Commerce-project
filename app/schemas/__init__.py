@@ -34,8 +34,3 @@ from .wishlist import (
 
 from .payment import PaymentCreate, PaymentResponse
 
-from .address import (
-    AddressCreate,
-    AddressUpdate,
-    AddressResponse
-)

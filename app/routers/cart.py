@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 import app.crud as crud
-from pydantic import BaseModel
 
 from app.schemas.cart import (
     CartCreate,
@@ -17,8 +16,6 @@ router = APIRouter(
     tags=["Cart"]
 )
 
-class CartUpdate(BaseModel): 
-     quantity: int
 
 def get_db():
     db = SessionLocal()
@@ -54,33 +51,6 @@ def view_cart(
     )
 
 
-
-@router.put("/{cart_id}", response_model=CartResponse)
-def update_cart(
-    cart_id: int,
-    cart: CartUpdate,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
-):
-
-    updated = crud.update_cart(
-        db,
-        cart_id,
-        cart.quantity,
-        current_user.id
-    )
-
-    if not updated:
-        raise HTTPException(
-            status_code=404,
-            detail="Cart item not found"
-        )
-
-    return updated
-
-
-
-
 @router.delete("/{cart_id}")
 def remove_from_cart(
     cart_id: int,
@@ -90,8 +60,7 @@ def remove_from_cart(
 
     deleted = crud.remove_from_cart(
         db,
-        cart_id,
-        current_user.id
+        cart_id
     )
 
     if not deleted:
@@ -103,5 +72,3 @@ def remove_from_cart(
     return {
         "message": "Item removed from cart"
     }
-
-   

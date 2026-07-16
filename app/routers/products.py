@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db, get_current_user
-from app.models.user import User
+from app.dependencies import get_db
 import app.crud as crud
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse
 
@@ -18,114 +17,61 @@ router = APIRouter(
 
 
 @router.post("/", response_model=ProductResponse)
-def create_product(
-    product: ProductCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     if product.category_id is not None:
-        category = crud.get_category(db, product.category_id, current_user.id)
+        category = crud.get_category(db, product.category_id)
         if not category:
             raise HTTPException(
                 status_code=404,
                 detail="Category not found"
             )
-    return crud.create_product(db, product, current_user.id)
+    return crud.create_product(db, product)
 
 
 @router.get("/", response_model=list[ProductResponse])
 def get_products(
     search: str = "",
-    category_id: int | None = None,
-    min_price: float | None = None,
-    max_price: float | None = None,
     skip: int = 0,
-    limit: int = 12,
+    limit: int = 10,
     sort: str = "id",
     db: Session = Depends(get_db)
 ):
 
     return crud.get_products(
         db=db,
-        user_id=None,
         search=search,
-        category_id=category_id,
-        min_price=min_price,
-        max_price=max_price,
         skip=skip,
         limit=limit,
         sort=sort
     )
 
-@router.get("", response_model=list[ProductResponse])
-def list_products_alias(
-    search: str = "",
-    category_id: int | None = None,
-    min_price: float | None = None,
-    max_price: float | None = None,
-    skip: int = 0,
-    limit: int = 12,
-    sort: str = "id",
-    db: Session = Depends(get_db)
-):
-    return crud.get_products(
-        db=db,
-        user_id=None,
-        search=search,
-        category_id=category_id,
-        min_price=min_price,
-        max_price=max_price,
-        skip=skip,
-        limit=limit,
-        sort=sort,
-    )
 
 @router.get("/{product_id}", response_model=ProductResponse)
-def get_product(
-    product_id: int,
-    db: Session = Depends(get_db),
-):
-    product = crud.get_product_public(
-        db,
-        product_id
-    )
-
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    product = crud.get_product(db, product_id)
     if not product:
-        raise HTTPException(
-            status_code=404,
-            detail="Product not found"
-        )
-
+        raise HTTPException(status_code=404, detail="Product not found")
     return product
 
 
 @router.put("/{product_id}", response_model=ProductResponse)
-def update_product(
-    product_id: int,
-    product: ProductUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def update_product(product_id: int, product: ProductUpdate, db: Session = Depends(get_db)):
     if product.category_id is not None:
-        category = crud.get_category(db, product.category_id, current_user.id)
+        category = crud.get_category(db, product.category_id)
         if not category:
             raise HTTPException(
                 status_code=400,
                 detail="Category not found"
             )
-    updated = crud.update_product(db, product_id, product, current_user.id)
+    updated = crud.update_product(db, product_id, product)
     if not updated:
         raise HTTPException(status_code=404, detail="Product not found")
     return updated
 
 
 @router.delete("/{product_id}")
-def delete_product(
-    product_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    deleted = crud.delete_product(db, product_id, current_user.id)
+def delete_product(product_id: int, db: Session = Depends(get_db)):
+    deleted = crud.delete_product(db, product_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted successfully"}
@@ -135,11 +81,10 @@ def delete_product(
 def upload_product_image(
     product_id: int,
     image: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
 
-    product = crud.get_product(db, product_id, current_user.id)
+    product = crud.get_product(db, product_id)
 
     if not product:
         raise HTTPException(
