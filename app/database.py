@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy.pool import StaticPool
 
 DATABASE_URL = "sqlite:///./ecommerce.db"
 
@@ -10,7 +9,6 @@ engine = create_engine(
         "check_same_thread": False,
         "timeout": 30,          # Wait up to 30s for a write lock instead of crashing
     },
-    poolclass=StaticPool,       # Single shared connection — avoids SQLite file-lock deadlocks
     pool_pre_ping=True,         # Drop stale/dead connections before use
 )
 

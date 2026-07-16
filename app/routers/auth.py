@@ -26,8 +26,14 @@ def login(
     db: Session = Depends(get_db)
 ):
     db_user = get_user_by_email(db, form_data.username)
+    print("LOGIN EMAIL:", form_data.username)
+    print("USER:", db_user)
     if not db_user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+        print("PASSWORD FROM FRONTEND:", form_data.password)
+        print("PASSWORD FROM DB:", db_user.password)
+
+
     if not verify_password(form_data.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     token = create_access_token({"sub": str(db_user.id)})

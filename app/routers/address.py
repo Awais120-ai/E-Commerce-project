@@ -29,8 +29,15 @@ def create_address(
 
 
 @router.get("/", response_model=list[AddressResponse])
-def get_addresses(db: Session = Depends(get_db)):
-    return crud.get_addresses(db)
+def get_addresses(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    print("Current User ID:", current_user.id)
+    return crud.get_addresses(
+        db,
+        current_user.id
+    )
 
 
 @router.get("/{address_id}", response_model=AddressResponse)

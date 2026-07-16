@@ -12,7 +12,7 @@ def print_resp(r):
     except Exception:
         print(r.status_code, r.text)
 
-# 1. Register a new user (if endpoint exists)
+# 1. Register a new user
 user_data = {"full_name": "Test User", "email": "test@example.com", "password": "password123"}
 resp = client.post("/auth/register", json=user_data)
 print("Register:")
@@ -27,9 +27,22 @@ if resp.status_code != 200:
     token = None
 else:
     token = resp.json().get("access_token")
-    headers = {"Authorization": f"Bearer {token}"}
 
 headers = {"Authorization": f"Bearer {token}"} if token else {}
+
+# Create Address
+address_data = {
+    "full_name": "Test User Address",
+    "phone": "1234567890",
+    "country": "TestCountry",
+    "city": "TestCity",
+    "postal_code": "12345",
+    "address": "123 Test St"
+}
+resp = client.post("/addresses/", json=address_data, headers=headers)
+print("Create Address:")
+print_resp(resp)
+address_id = resp.json().get("id") if resp.status_code == 200 else None
 
 # 3. Create a category
 category_data = {"name": "Electronics"}
@@ -50,11 +63,31 @@ cart_data = {"product_id": product_id, "quantity": 2}
 resp = client.post("/cart/", json=cart_data, headers=headers)
 print("Add to Cart:")
 print_resp(resp)
+cart_id = resp.json().get("id") if resp.status_code == 200 else None
 
-# 6. Create order
-resp = client.post("/orders/", headers=headers)
-print("Create Order:")
-print_resp(resp)
+# 5b. Update Cart - Increase Quantity
+if cart_id:
+    update_data = {"quantity": 5}
+    resp = client.put(f"/cart/{cart_id}", json=update_data, headers=headers)
+    print("Update Cart (Increase to 5):")
+    print_resp(resp)
+
+# 5c. Update Cart - Decrease Quantity
+if cart_id:
+    update_data = {"quantity": 3}
+    resp = client.put(f"/cart/{cart_id}", json=update_data, headers=headers)
+    print("Update Cart (Decrease to 3):")
+    print_resp(resp)
+
+# 6. Create order (Checkout)
+if address_id:
+    checkout_data = {
+        "address_id": address_id,
+        "payment_method": "Credit Card"
+    }
+    resp = client.post("/orders/", json=checkout_data, headers=headers)
+    print("Create Order (Checkout):")
+    print_resp(resp)
 
 # 7. List orders
 resp = client.get("/orders/", headers=headers)
@@ -67,3 +100,17 @@ if resp.status_code == 200 and isinstance(resp.json(), list) and resp.json():
     resp = client.get(f"/orders/{order_id}", headers=headers)
     print("Get Order:")
     print_resp(resp)
+
+# 9. Test Buy Now Support
+if address_id and product_id:
+    buy_now_data = {
+        "address_id": address_id,
+        "payment_method": "Credit Card",
+        "buy_now": True,
+        "product_id": product_id,
+        "quantity": 2
+    }
+    print("Testing Buy Now:")
+    resp = client.post("/orders/", json=buy_now_data, headers=headers)
+    print_resp(resp)
+

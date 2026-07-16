@@ -8,6 +8,11 @@ from app.schemas.order import (
     OrderResponse,
     OrderStatusUpdate
 )
+from app.schemas.order import (
+    CheckoutRequest,
+    OrderResponse,
+    OrderStatusUpdate
+)
 
 from app.dependencies import get_current_user
 
@@ -28,14 +33,22 @@ def get_db():
 # Checkout
 @router.post("/", response_model=OrderResponse)
 def checkout(
+    checkout: CheckoutRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
 
     order = crud.create_order(
-        db,
-        current_user.id
-    )
+    db=db,
+    user_id=current_user.id,
+    address_id=checkout.address_id,
+    payment_method=checkout.payment_method,
+
+    # Buy Now Support
+    buy_now=checkout.buy_now,
+    product_id=checkout.product_id,
+    quantity=checkout.quantity,
+)
 
     if not order:
         raise HTTPException(
@@ -44,7 +57,6 @@ def checkout(
         )
 
     return order
-
 
 # My Orders
 @router.get("/", response_model=list[OrderResponse])
@@ -69,7 +81,8 @@ def order_details(
 
     order = crud.get_order(
         db,
-        order_id
+        order_id,
+        current_user.id 
     )
 
     if not order:

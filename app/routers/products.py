@@ -36,17 +36,22 @@ def create_product(
 @router.get("/", response_model=list[ProductResponse])
 def get_products(
     search: str = "",
+    category_id: int | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
     skip: int = 0,
-    limit: int = 10,
+    limit: int = 12,
     sort: str = "id",
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
 
     return crud.get_products(
         db=db,
-        user_id=current_user.id,
+        user_id=None,
         search=search,
+        category_id=category_id,
+        min_price=min_price,
+        max_price=max_price,
         skip=skip,
         limit=limit,
         sort=sort
@@ -55,19 +60,21 @@ def get_products(
 @router.get("", response_model=list[ProductResponse])
 def list_products_alias(
     search: str = "",
+    category_id: int | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
     skip: int = 0,
-    limit: int = 10,
+    limit: int = 12,
     sort: str = "id",
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    """Alias for `/products/` to handle requests without trailing slash.
-    Calls the same logic as `get_products`.
-    """
     return crud.get_products(
         db=db,
-        user_id=current_user.id,
+        user_id=None,
         search=search,
+        category_id=category_id,
+        min_price=min_price,
+        max_price=max_price,
         skip=skip,
         limit=limit,
         sort=sort,
@@ -77,11 +84,18 @@ def list_products_alias(
 def get_product(
     product_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
 ):
-    product = crud.get_product(db, product_id, current_user.id)
+    product = crud.get_product_public(
+        db,
+        product_id
+    )
+
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
+        )
+
     return product
 
 

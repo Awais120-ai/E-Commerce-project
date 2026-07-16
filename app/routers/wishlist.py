@@ -41,3 +41,4 @@ def remove_from_wishlist(
     if result is None:
         raise HTTPException(status_code=404, detail="Wishlist item not found")
     return {"message": "Item removed from wishlist"}
+
