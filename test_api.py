@@ -43,11 +43,9 @@ def test_flow():
     print(f"Status: {status}, Response: {res}")
     
     print("\n4. Testing login...")
-    login_data = {
-        "email": "test@example.com",
-        "password": "mypassword"
-    }
-    status, login_res = send_request(f"{BASE_URL}/auth/login", method="POST", data=login_data)
+    login_data = "username=test@example.com&password=mypassword".encode("utf-8")
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    status, login_res = send_request(f"{BASE_URL}/auth/login", method="POST", data=login_data, headers=headers)
     print(f"Status: {status}, Response: {login_res}")
     
     if status == 200:
@@ -57,6 +55,38 @@ def test_flow():
         print("\n5. Testing get current user...")
         status, res = send_request(f"{BASE_URL}/users/me", headers=headers)
         print(f"Status: {status}, Response: {res}")
+
+        # Test creating an address
+        print("\n5.1. Testing create address...")
+        address_data = {
+            "address_type": "Home",
+            "street_address": "123 Main St",
+            "city": "Lahore",
+            "state": "Punjab",
+            "postal_code": "54000",
+            "country": "Pakistan",
+            "phone_number": "03001234567"
+        }
+        status, addr_res = send_request(f"{BASE_URL}/addresses/", method="POST", data=address_data, headers=headers)
+        print(f"Status: {status}, Response: {addr_res}")
+
+        # Test getting, updating, and deleting addresses
+        if status == 201:
+            addr_id = addr_res["id"]
+            print("\n5.2. Testing get addresses...")
+            status, res = send_request(f"{BASE_URL}/addresses/", headers=headers)
+            print(f"Status: {status}, Response: {res}")
+
+            print("\n5.3. Testing update address...")
+            update_data = {
+                "street_address": "456 New St"
+            }
+            status, res = send_request(f"{BASE_URL}/addresses/{addr_id}", method="PUT", data=update_data, headers=headers)
+            print(f"Status: {status}, Response: {res}")
+
+            print("\n5.4. Testing delete address...")
+            status, res = send_request(f"{BASE_URL}/addresses/{addr_id}", method="DELETE", headers=headers)
+            print(f"Status: {status}, Response: {res}")
     else:
         print("Login failed, skipping authenticated routes.")
         

@@ -6,7 +6,9 @@ from app.database import Base, engine
 import app.models
 from fastapi.staticfiles import StaticFiles
 from app.routers import auth, users, products, categories, cart, orders, wishlist
-from app.routers import payments
+from app.routers import payments, addresses
+
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -16,7 +18,11 @@ app = FastAPI(
 )
 
 # Configure CORS
-origins = ["*"]
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+]
+
 allowed_origins = os.getenv("ALLOWED_ORIGINS")
 if allowed_origins:
     origins = [origin.strip() for origin in allowed_origins.split(",") if origin.strip()]
@@ -37,6 +43,8 @@ app.include_router(cart.router)
 app.include_router(orders.router)
 app.include_router(wishlist.router)
 app.include_router(payments.router)
+app.include_router(addresses.router)
+
 
 @app.get("/")
 def home():

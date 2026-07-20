@@ -24,3 +24,4 @@ class OrderItem(Base):
     price = Column(Integer)
 
     product = relationship("Product")
+    order = relationship("Order", back_populates="items")

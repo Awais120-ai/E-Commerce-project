@@ -1,0 +1,19 @@
+# pyrefly: ignore [missing-import]
+
+
+JWT_SECRET = "1b934f3954d407992a18c56a4d36e4d31419b646f606d78e12b3a77911723753"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
+
+# email  configuration
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USERNAME = "[EMAIL_ADDRESS]"
+EMAIL_PASSWORD = "[PASSWORD]"
+EMAIL_FROM = "[EMAIL_ADDRESS]"
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+
+# other  
+BASE_URL = "http://localhost:8000"
+FRONTEND_URL = "http://localhost:3000"

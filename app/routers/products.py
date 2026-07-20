@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db
+from app.dependencies import get_db, get_current_user
 import app.crud as crud
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse
 
@@ -17,7 +17,11 @@ router = APIRouter(
 
 
 @router.post("/", response_model=ProductResponse)
-def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+def create_product(product: ProductCreate,
+ db: Session = Depends(get_db),
+  current_user = Depends(get_current_user)
+
+):
     if product.category_id is not None:
         category = crud.get_category(db, product.category_id)
         if not category:
@@ -28,21 +32,31 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     return crud.create_product(db, product)
 
 
+@router.get("/home", response_model=list[ProductResponse])
+def get_home_products(db: Session = Depends(get_db)):
+    return crud.get_latest_products(db=db, limit=12)
+
+
 @router.get("/", response_model=list[ProductResponse])
 def get_products(
     search: str = "",
+    category_id: int | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    sort: str = "newest",
     skip: int = 0,
-    limit: int = 10,
-    sort: str = "id",
-    db: Session = Depends(get_db)
+    limit: int = 100,
+    db: Session = Depends(get_db),
 ):
-
     return crud.get_products(
         db=db,
         search=search,
+        category_id=category_id,
+        min_price=min_price,
+        max_price=max_price,
+        sort=sort,
         skip=skip,
         limit=limit,
-        sort=sort
     )
 
 
