@@ -132,13 +132,15 @@ def get_products(
         query = query.filter(Product.price <= max_price)
 
     # --- Sorting ---
-    if sort == "price_low":
+    sort_value = (sort or "newest").strip().lower()
+
+    if sort_value == "price_asc":
         query = query.order_by(Product.price.asc())
-    elif sort == "price_high":
+    elif sort_value == "price_desc":
         query = query.order_by(Product.price.desc())
-    elif sort == "name":
+    elif sort_value == "name_asc":
         query = query.order_by(Product.name.asc())
-    else:  # default: newest
+    else:  # newest and any unrecognized value
         query = query.order_by(Product.id.desc())
 
     return query.offset(skip).limit(limit).all()
@@ -377,12 +379,10 @@ def buy_now(
 
     Strategy:
     - If the product is already in the user's cart, reuse that cart item
-      (update its quantity if needed) so stock is not double-reserved, then
+      as-is (without reserving stock again or altering quantity), then
       checkout using ONLY that cart item. Other cart items remain untouched.
-    - If it is not in the cart, add it temporarily using the normal
-      add_to_cart path (which handles stock reservation), then place the
-      order using only the newly added item. The order placement clears only
-      the selected cart item.
+    - If it is not in the cart, reserve stock, create a temporary Buy Now order
+      directly without touching the cart, and place the order.
     """
     if quantity <= 0:
         raise HTTPException(
@@ -394,8 +394,6 @@ def buy_now(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    cart_item_ids_to_checkout = []
-
     # Check whether this product already lives in the user's cart.
     existing_cart_item = db.query(Cart).filter(
         Cart.user_id == user_id,
@@ -403,24 +401,70 @@ def buy_now(
     ).first()
 
     if existing_cart_item:
-        # Reuse the existing cart item — adjust quantity if different.
-        if existing_cart_item.quantity != quantity:
-            update_cart_quantity(db, existing_cart_item.id, quantity)
-        cart_item_ids_to_checkout.append(existing_cart_item.id)
-    else:
-        # Temporarily add the product to the cart (reserves stock).
-        new_cart_item = add_to_cart(db, user_id, CartCreate(product_id=product_id, quantity=quantity))
-        cart_item_ids_to_checkout.append(new_cart_item.id)
+        # Reuse the existing cart item as-is without reserving stock again.
+        # Place the order using only the selected cart item.
+        return create_order(
+            db,
+            user_id,
+            payment_method=payment_method,
+            address_id=address_id,
+            cart_item_ids=[existing_cart_item.id]
+        )
 
-    # Place the order using only the selected cart item(s).
-    # Other cart items remain in the cart untouched.
-    return create_order(
-        db,
-        user_id,
-        payment_method=payment_method,
-        address_id=address_id,
-        cart_item_ids=cart_item_ids_to_checkout
-    )
+    # Since product is NOT inside cart, reserve stock directly
+    if product.stock < quantity:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Insufficient stock. Only {product.stock} unit(s) available."
+        )
+
+    # Reserve stock (temporary reservation)
+    product.stock -= quantity
+    db.commit()
+
+    try:
+        # Resolve shipping address (same logic as in create_order)
+        shipping_address = "N/A"
+        if address_id:
+            addr = db.query(Address).filter(Address.id == address_id, Address.user_id == user_id).first()
+            if addr:
+                shipping_address = f"{addr.street_address}, {addr.city}, {addr.state or ''}, {addr.postal_code}, {addr.country}"
+        else:
+            addr = db.query(Address).filter(Address.user_id == user_id).order_by(Address.id.desc()).first()
+            if addr:
+                shipping_address = f"{addr.street_address}, {addr.city}, {addr.state or ''}, {addr.postal_code}, {addr.country}"
+
+        # Create temporary Buy Now order / place order
+        order = Order(
+            user_id=user_id,
+            status="Pending",
+            created_at=datetime.now(timezone.utc),
+            payment_method=payment_method or "Cash on Delivery",
+            shipping_address=shipping_address
+        )
+        db.add(order)
+        db.flush()
+
+        # Create order item
+        order_item = OrderItem(
+            order_id=order.id,
+            product_id=product.id,
+            quantity=quantity,
+            price=product.price
+        )
+        db.add(order_item)
+
+        order.total_price = product.price * quantity
+        db.commit()
+        db.refresh(order)
+        return order
+
+    except Exception as e:
+        # If order placement fails, remove the temporary reservation (restore stock)
+        db.rollback()
+        product.stock += quantity
+        db.commit()
+        raise e
 
 
 # ---------------------------------------------
