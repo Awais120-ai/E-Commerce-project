@@ -55,6 +55,8 @@ def home():
 def health():
     return {"status": "Server Running"}
 
+os.makedirs("uploads", exist_ok=True)
+
 app.mount(
     "/uploads",
     StaticFiles(directory="uploads"),
